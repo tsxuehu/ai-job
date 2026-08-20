@@ -1,0 +1,49 @@
+# Node.js / TypeScript
+
+Node.js/TypeScript 的核心是“JavaScript 动态运行时 + TypeScript 编译期约束 + 单线程事件循环上的异步 IO”。快速学习必须区分类型检查与运行时校验，并避免阻塞事件循环、丢失 Promise、忽略背压和资源关闭。
+
+> 开始真实项目之前，先阅读 [Node.js / TypeScript 项目特性与注意事项](项目注意事项.md)；建立 workspace 时使用 [Node.js / TypeScript 企业级项目结构](企业级项目结构.md)。
+
+## 快速路线
+
+| 顺序 | 分类 | 掌握结果 |
+| ---: | --- | --- |
+| 1 | [基础语法](01-基础语法.md) | 能区分 JS 运行时、TS 类型、模块和基础语法 |
+| 2 | [变量、数据与类型](02-变量数据与类型.md) | 能理解动态值、对象共享、联合类型和运行时校验 |
+| 3 | [表达式与逻辑控制](03-表达式与逻辑控制.md) | 能处理转换、类型收窄、穷举和异步循环 |
+| 4 | [函数与作用域](04-函数与作用域.md) | 能理解闭包、this、async 函数和泛型擦除 |
+| 5 | [自定义类型与抽象](05-自定义类型与抽象.md) | 能使用 type、interface、class、组合与泛型 |
+| 6 | [容器与迭代](06-容器与迭代.md) | 能使用 Array、Map、Set、Buffer 和异步迭代 |
+| 7 | [错误处理](07-错误处理.md) | 能统一 throw、rejection、Stream、取消和崩溃边界 |
+| 8 | [内存与资源](08-内存与资源.md) | 能理解 V8 内存并治理监听器、连接和任务资源 |
+| 9 | [模块化、依赖与 IO](09-模块化依赖与IO.md) | 能设计运行时模块边界并治理 ESM、依赖和 IO |
+| 10 | [并发与异步](10-并发与异步.md) | 能解释事件循环、Promise、worker、背压和任务生命周期 |
+| 11 | [运行时与性能](11-运行时与性能.md) | 能分析 V8、event loop、CPU、GC 和 heap 问题 |
+| 12 | [测试与工程实践](12-测试与工程实践.md) | 能测试和治理生产 TypeScript 服务 |
+
+## 七天快速上手
+
+1. 第 1 天：完成 JavaScript 值、对象、作用域、控制流程和 TS 类型收窄。
+2. 第 2 天：训练函数、闭包、`this`、数组、Map、接口、联合类型和泛型。
+3. 第 3 天：处理 Error、Promise rejection、AbortSignal 和资源清理。
+4. 第 4 天：建立 ESM TypeScript 项目，完成文件、Stream、JSON 和 HTTP。
+5. 第 5 天：实现并发限制、超时、背压和 CPU 任务隔离。
+6. 第 6 天：完成 API、数据库、校验、日志和集成测试。
+7. 第 7 天：分析事件循环延迟、CPU profile 和 heap snapshot。
+
+七天目标是写出边界清晰的服务，不是熟悉所有 npm 框架。
+
+## 需要学习
+
+- JavaScript：作用域、闭包、原型、`this`、Promise、异常和模块系统。
+- TypeScript：泛型、联合类型、类型收窄、工具类型和类型擦除。
+- Node.js：事件循环、microtask、libuv、Buffer、Stream 和背压。
+- worker threads、child process；CPU 密集任务的隔离。
+- Web 框架、中间件、参数校验、ORM/SQL、测试和性能分析。
+- SSE/WebSocket、超时、取消、断连和优雅停机。
+
+## 验收
+
+实现一个包含鉴权、数据库、缓存、测试、日志和流式 AI 输出的 TypeScript 服务；能够排查事件循环阻塞、连接未释放和堆内存持续增长。
+
+建议验收项目：实现流式任务 API，包含运行时参数校验、数据库、超时与取消、并发限制、Stream 背压、优雅停机、指标和测试。

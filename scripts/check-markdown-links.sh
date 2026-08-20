@@ -32,7 +32,17 @@ while IFS= read -r -d '' file; do
       printf 'Broken link: %s -> %s\n' "$file" "$target"
       broken=1
     fi
-  done < <(perl -ne 'while (/\[[^]]*\]\(([^)]+)\)/g) { print "$1\n" }' "$file")
+  done < <(perl -ne '
+    if (/^\s*```/) {
+      $in_fence = !$in_fence;
+      next;
+    }
+    next if $in_fence;
+    s/`[^`]*`//g;
+    while (/\[[^]]*\]\(([^)]+)\)/g) {
+      print "$1\n";
+    }
+  ' "$file")
 done < <(find . -type f -name '*.md' -not -path './.git/*' -print0)
 
 if [[ "$broken" -ne 0 ]]; then

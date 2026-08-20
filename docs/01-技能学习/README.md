@@ -17,8 +17,8 @@
 ## 目录
 
 1. [编程语言](01-编程语言/README.md)
-   - [Node.js](01-编程语言/Node.js.md) · [Python](01-编程语言/Python.md) · [Java](01-编程语言/Java.md)
-   - [Go](01-编程语言/Go.md) · [Rust](01-编程语言/Rust.md) · [C++](01-编程语言/C++.md)
+   - [Node.js](01-编程语言/nodejs/README.md) · [Python](01-编程语言/python/README.md) · [Java](01-编程语言/java/README.md)
+   - [Go](01-编程语言/go/README.md) · [Rust](01-编程语言/rust/README.md) · [C++](01-编程语言/cpp/README.md)
 2. 计算机基础
    - [数据结构与算法](02-计算机基础/数据结构与算法.md)
    - [操作系统与 Linux](02-计算机基础/操作系统与Linux.md)
