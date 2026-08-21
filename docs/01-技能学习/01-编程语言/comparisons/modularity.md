@@ -1,14 +1,14 @@
-# 六门语言的模块化设计对比
+# 五门语言的模块化设计对比
 
-模块系统回答“代码怎样声明、导入和构建”；模块化设计回答“系统怎样切分，边界如何保持稳定”。会使用 package、crate 或 import，不代表系统已经模块化。
+模块系统回答“代码怎样声明、导入和构建”；模块化设计回答“系统怎样切分，边界如何保持稳定”。会使用 package、module 或 import，不代表系统已经模块化。
 
 ## 先区分四个层次
 
 | 层次 | 回答的问题 | 常见例子 |
 | --- | --- | --- |
-| 命名空间 | 名称如何避免冲突、控制可见性？ | C++ namespace、Rust module、Java/Go package |
-| 源码模块 | 哪些代码形成高内聚边界？ | feature package、crate、library、npm/Python package |
-| 构建模块 | 哪部分可独立编译、测试、发布和依赖？ | CMake target、Cargo crate、Maven module、workspace package |
+| 命名空间 | 名称如何避免冲突、控制可见性？ | C++ namespace、Java/Go package、ESM/Python module |
+| 源码模块 | 哪些代码形成高内聚边界？ | feature package、library、npm/Python package |
+| 构建模块 | 哪部分可独立编译、测试、发布和依赖？ | CMake target、Maven module、workspace package |
 | 部署单元 | 哪部分能独立运行、扩缩容和失败？ | 进程、服务、Worker、函数 |
 
 这四层不必一一对应。模块化单体通常包含多个源码/构建模块，但仍作为一个进程部署。不要因为代码分了目录，就过早拆成微服务。
@@ -22,12 +22,11 @@
 5. **可独立验证**：能通过公开 API 完成单元、组件或契约测试。
 6. **替换成本可控**：数据库、网络和第三方 SDK 被适配层隔离，不污染核心模型。
 
-## 六门语言如何表达模块边界
+## 五门语言如何表达模块边界
 
 | 语言 | 主要源码边界 | 强制隐藏方式 | 构建/发布边界 | 最常见的模块化风险 |
 | --- | --- | --- | --- | --- |
 | C++ | namespace、头文件、library | public/private header、PImpl、target include | CMake target、静态/动态库、模块 | include 泄漏、ODR、循环依赖、ABI 与宏配置 |
-| Rust | module、crate | 默认私有、`pub(crate)`、re-export | package/crate/workspace | `pub` 过度、crate 过细、feature 组合、trait 放错边界 |
 | Go | package、`internal` | 小写名称、internal 导入限制 | module/package/binary | package 按技术层堆放、接口过大、import cycle、utils |
 | Java | package、JPMS、构建 module | package-private、exports、架构测试 | JAR、Maven/Gradle module | Spring 扫描掩盖依赖、共享 entity、循环 Bean、公共 common 模块 |
 | Node.js/TS | ESM module、package、workspace | package exports、私有路径约定 | npm package、bundle、进程 | 深层导入、ESM/CJS 混用、循环 import、类型模块与运行时错位 |
@@ -71,18 +70,6 @@ task_server        # composition root，组装所有 target
 ```
 
 公共头文件只暴露稳定 API；实现头文件不加入 PUBLIC include。`target_link_libraries` 的 PRIVATE/PUBLIC 传播关系应与架构依赖一致。
-
-### Rust：crate 是昂贵但清晰的构建边界
-
-```text
-crates/domain
-crates/application
-crates/postgres
-crates/http
-crates/server
-```
-
-小项目先用一个 library crate 内的私有 module，边界稳定、确需独立编译或复用时再拆 crate。用 re-export 提供窄 API，不把所有项都 `pub`。端口 trait 通常放在需要抽象的一侧。
 
 ### Go：package 围绕能力，而不是 MVC 文件类型
 
@@ -141,7 +128,7 @@ src/app/bootstrap.py
 - Postgres、内存和远程实现依赖该端口，而不是让核心依赖某个数据库 SDK 接口。
 - 接口只包含当前调用方需要的行为，不能把具体实现的全部方法照抄进去。
 
-语言差异：C++/Java 常显式继承 interface；Rust 显式 `impl Trait for Type`；Go 隐式满足接口；Python Protocol 与 TypeScript interface 主要提供结构化静态检查。无论语法如何，依赖方向原则相同。
+语言差异：C++/Java 常显式继承 interface；Go 隐式满足接口；Python Protocol 与 TypeScript interface 主要提供结构化静态检查。无论语法如何，依赖方向原则相同。
 
 ## 数据不能直接穿透模块
 
@@ -195,4 +182,4 @@ HTTP DTO ⇄ application command/result ⇄ domain model ⇄ persistence record
 
 完整仓库中的 apps、modules、contracts、migrations、tests、deploy、ops 和 docs 如何协作，参见 [企业级后端项目工程结构](../../../03-实战项目/企业级项目工程结构.md)。
 
-继续学习：[C++](../cpp/09-模块化依赖与IO.md)、[Rust](../rust/09-模块化依赖与IO.md)、[Go](../go/09-模块化依赖与IO.md)、[Java](../java/09-模块化依赖与IO.md)、[Node.js/TypeScript](../nodejs/09-模块化依赖与IO.md)、[Python](../python/09-模块化依赖与IO.md)。
+继续学习：[C++](../cpp/09-模块化依赖与IO.md)、[Go](../go/09-模块化依赖与IO.md)、[Java](../java/09-模块化依赖与IO.md)、[Node.js/TypeScript](../nodejs/09-模块化依赖与IO.md)、[Python](../python/09-模块化依赖与IO.md)。
