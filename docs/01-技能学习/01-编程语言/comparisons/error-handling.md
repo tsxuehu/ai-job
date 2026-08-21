@@ -1,0 +1,358 @@
+# 五门语言的错误处理：创建订单失败后怎么传出去
+
+> 目标：用同一个创建订单流程，对比五门语言如何表示、传播、包装和处理错误。
+
+统一处理三种失败：
+
+```text
+1. 商品金额非法       → 客户端输入错误，不重试
+2. 订单编号已存在     → 业务冲突，不重试
+3. 数据库暂时不可用   → 基础设施错误，可能重试
+```
+
+正确流程是：
+
+```text
+底层发现失败
+    ↓ 保留原因
+业务层转换成稳定错误
+    ↓
+HTTP 边界转换成状态码和响应
+```
+
+数据库错误不能直接变成 HTTP 响应，业务错误也不要在每一层重复记录。
+
+---
+
+## 1. 一张表先看结论
+
+| 语言 | 主要错误机制 | 调用方如何处理 |
+|---|---|---|
+| C++ | 返回值、`std::expected`、异常 | 检查结果或捕获异常，项目需统一策略 |
+| Go | `error` 返回值 | `if err != nil`、`errors.Is/As` |
+| Java | 异常 | `try/catch`，区分受检与非受检异常 |
+| Node.js/TS | throw、Promise rejection | `try/catch`，捕获值类型是 `unknown` |
+| Python | 异常 | `try/except`，可用异常链保留原因 |
+
+语言机制不同，但工程目标相同：
+
+- 错误必须有稳定语义；
+- 传播时保留原始原因；
+- 只在能够处理的层捕获；
+- 只对明确的临时错误重试；
+- 只在边界转换成 HTTP、RPC 或消息协议。
+
+---
+
+## 2. C++：明确选择返回错误还是异常
+
+可预期的业务失败可以用 `std::expected` 表达：
+
+```cpp
+enum class CreateOrderError {
+    invalid_amount,
+    duplicate_order,
+    store_unavailable,
+};
+
+std::expected<OrderId, CreateOrderError>
+OrderService::create(const CreateOrderCommand& command) {
+    if (command.amount_cents <= 0) {
+        return std::unexpected(CreateOrderError::invalid_amount);
+    }
+
+    auto saved = store_.save(command);
+    if (!saved) {
+        return std::unexpected(map_store_error(saved.error()));
+    }
+    return saved.value();
+}
+```
+
+调用方必须检查结果：
+
+```cpp
+auto result = service.create(command);
+if (!result) {
+    return to_http_response(result.error());
+}
+return HttpResponse::created(result.value());
+```
+
+`std::expected` 属于 C++23。使用较早标准时，项目可以采用经过选择的结果类型，或者统一使用异常策略。
+
+异常适合当前层无法恢复、需要向上传播的失败：
+
+```cpp
+try {
+    return service.create(command);
+} catch (const StoreUnavailable& error) {
+    // 在边界转换或记录
+}
+```
+
+C++ 项目最危险的不是选错一种机制，而是不同模块随意混用返回码、空指针、异常和日志，导致调用方不知道必须检查什么。
+
+---
+
+## 3. Go：错误是普通返回值
+
+先定义稳定的业务错误：
+
+```go
+var (
+    ErrInvalidAmount  = errors.New("invalid order amount")
+    ErrDuplicateOrder = errors.New("duplicate order")
+)
+
+type StoreUnavailableError struct {
+    Cause error
+}
+
+func (e *StoreUnavailableError) Error() string {
+    return "order store unavailable: " + e.Cause.Error()
+}
+
+func (e *StoreUnavailableError) Unwrap() error {
+    return e.Cause
+}
+```
+
+创建订单时逐层返回：
+
+```go
+func (s *Service) Create(
+    ctx context.Context,
+    command CreateOrderCommand,
+) (string, error) {
+    if command.AmountCents <= 0 {
+        return "", ErrInvalidAmount
+    }
+
+    id, err := s.store.Save(ctx, command)
+    if err != nil {
+        if errors.Is(err, ErrDuplicateKey) {
+            return "", ErrDuplicateOrder
+        }
+        return "", &StoreUnavailableError{Cause: err}
+    }
+    return id, nil
+}
+```
+
+HTTP 边界根据错误语义映射：
+
+```go
+switch {
+case errors.Is(err, ErrInvalidAmount):
+    writeError(w, 400, "INVALID_AMOUNT")
+case errors.Is(err, ErrDuplicateOrder):
+    writeError(w, 409, "DUPLICATE_ORDER")
+default:
+    writeError(w, 500, "INTERNAL_ERROR")
+}
+```
+
+使用 `%w`、`Unwrap`、`errors.Is/As` 保留并识别错误链。不要通过比较错误字符串判断类型。
+
+---
+
+## 4. Java：用异常类型表达失败语义
+
+定义业务异常：
+
+```java
+sealed class CreateOrderException extends RuntimeException
+    permits InvalidAmountException, DuplicateOrderException,
+            StoreUnavailableException {
+
+    CreateOrderException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+```
+
+业务代码抛出或转换异常：
+
+```java
+public OrderId create(CreateOrderCommand command) {
+    if (command.amountCents() <= 0) {
+        throw new InvalidAmountException();
+    }
+
+    try {
+        return store.save(command);
+    } catch (DuplicateKeyException error) {
+        throw new DuplicateOrderException(error);
+    } catch (DataAccessException error) {
+        throw new StoreUnavailableException(error);
+    }
+}
+```
+
+Controller advice 或 HTTP 边界统一映射：
+
+```text
+InvalidAmountException   → 400
+DuplicateOrderException  → 409
+StoreUnavailableException→ 503 或内部 500 策略
+```
+
+不要在每个 service 中 `catch (Exception)` 后只打印日志并继续。捕获异常的前提是当前层能恢复、补充语义或转换边界。
+
+受检异常适合强制调用方处理的明确契约；非受检异常更常用于无法在当前业务调用点恢复的失败。项目应保持一致，不要建立几十层包装异常。
+
+---
+
+## 5. Node.js / TypeScript：异步失败表现为 Promise rejection
+
+定义可识别的错误类型：
+
+```ts
+class InvalidAmountError extends Error {}
+class DuplicateOrderError extends Error {}
+class StoreUnavailableError extends Error {
+  constructor(cause: unknown) {
+    super("order store unavailable", { cause });
+  }
+}
+```
+
+异步函数可以直接抛出：
+
+```ts
+async function createOrder(command: CreateOrderCommand): Promise<string> {
+  if (command.amountCents <= 0) {
+    throw new InvalidAmountError();
+  }
+
+  try {
+    return await store.save(command);
+  } catch (error: unknown) {
+    if (isDuplicateKeyError(error)) {
+      throw new DuplicateOrderError();
+    }
+    throw new StoreUnavailableError(error);
+  }
+}
+```
+
+HTTP 边界处理：
+
+```ts
+try {
+  const id = await service.create(command);
+  reply.status(201).send({ id });
+} catch (error: unknown) {
+  if (error instanceof InvalidAmountError) {
+    return reply.status(400).send({ code: "INVALID_AMOUNT" });
+  }
+  throw error; // 交给统一错误处理中间件
+}
+```
+
+TypeScript 不能保证外部库只抛 `Error`，所以 catch 值应按 `unknown` 检查。不要用 `as Error` 跳过运行时判断。
+
+没有 `await`、没有返回 Promise 或遗漏统一 rejection 处理，都会让错误离开预期调用链。
+
+---
+
+## 6. Python：异常类型 + 异常链
+
+```python
+class CreateOrderError(Exception):
+    pass
+
+class InvalidAmountError(CreateOrderError):
+    pass
+
+class DuplicateOrderError(CreateOrderError):
+    pass
+
+class StoreUnavailableError(CreateOrderError):
+    pass
+```
+
+转换底层异常时保留原因：
+
+```python
+async def create_order(command: CreateOrderCommand) -> str:
+    if command.amount_cents <= 0:
+        raise InvalidAmountError("amount must be positive")
+
+    try:
+        return await store.save(command)
+    except UniqueViolation as error:
+        raise DuplicateOrderError(command.order_id) from error
+    except DatabaseError as error:
+        raise StoreUnavailableError("order store unavailable") from error
+```
+
+`raise ... from error` 建立异常链，日志和调试器仍能看到最底层数据库原因。
+
+HTTP 边界只捕获能够转换的异常：
+
+```python
+try:
+    order_id = await service.create(command)
+except InvalidAmountError:
+    return JSONResponse({"code": "INVALID_AMOUNT"}, status_code=400)
+```
+
+不要使用裸 `except:` 吞掉取消、退出和编程错误。需要重新抛出时直接使用 `raise`，不要丢失 traceback。
+
+---
+
+## 7. 哪些错误可以重试
+
+| 错误 | 是否重试 | 原因 |
+|---|---|---|
+| 金额非法 | 否 | 相同输入再次执行仍然失败 |
+| 订单已存在 | 通常否 | 应按幂等或冲突语义处理 |
+| 数据库连接瞬时中断 | 可以 | 可能恢复，但必须限制次数和总时长 |
+| 请求超时/取消 | 通常停止 | 调用方已经不再等待 |
+| 未知编程错误 | 否 | 重试可能重复破坏状态 |
+
+重试还必须满足：
+
+- 操作是幂等的，或有幂等键；
+- 有最大次数、退避和总体 deadline；
+- 不在多层同时重试；
+- 能区分临时错误与永久错误。
+
+---
+
+## 8. 日志应该在哪里记录
+
+同一个错误不要每层都记录一次。
+
+推荐：
+
+```text
+Store：补充数据库操作语义后返回
+Service：转换成稳定业务错误，不重复打印
+HTTP/Worker 边界：记录一次完整上下文和最终结果
+```
+
+日志包含订单号、错误类别、耗时和 trace ID，但不能泄露密码、Token、银行卡号或完整 SQL 参数。
+
+---
+
+## 9. 项目中只问这 6 个问题
+
+1. 这是输入错误、业务冲突还是基础设施失败？
+2. 调用方通过什么稳定类型识别它？
+3. 包装错误时是否保留原始原因？
+4. 当前层真的能处理，还是应该继续传播？
+5. 是否只在边界记录一次？
+6. 如果重试，操作是否幂等且受 deadline 限制？
+
+---
+
+## 语言内详细学习
+
+- [C++：错误处理](../cpp/07-错误处理.md)
+- [Go：错误处理](../go/07-错误处理.md)
+- [Java：错误处理](../java/07-错误处理.md)
+- [Node.js / TypeScript：错误处理](../nodejs/07-错误处理.md)
+- [Python：错误处理](../python/07-错误处理.md)

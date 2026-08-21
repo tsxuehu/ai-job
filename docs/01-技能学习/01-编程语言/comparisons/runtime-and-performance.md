@@ -1,0 +1,304 @@
+# 五门语言的运行时与性能：一次创建订单请求如何执行
+
+> 目标：看懂同一段后端业务在五门语言中如何被编译、调度和回收，并知道性能问题应该去哪里找。
+
+统一请求：
+
+```text
+POST /orders
+→ 解析 JSON
+→ 校验商品
+→ 计算总金额
+→ 写数据库
+→ 返回 JSON
+```
+
+先记住：语言运行时只影响其中一部分。一次请求如果总耗时 80 ms，其中数据库占 70 ms，优化一个 10 微秒的循环几乎没有业务收益。
+
+---
+
+## 1. 一张表先看结论
+
+| 语言 | 代码如何执行 | 任务如何调度 | 内存管理 |
+|---|---|---|---|
+| C++ | 提前编译为本地机器码 | OS 线程、线程池或框架事件循环 | 栈、显式所有权、RAII，无通用 GC |
+| Go | 提前编译为本地机器码，带 Go runtime | runtime 将 goroutine 调度到 OS 线程 | GC + 显式资源关闭 |
+| Java | 字节码运行在 JVM，热点代码 JIT 编译 | JVM 线程、Executor、虚拟线程 | GC + 显式资源关闭 |
+| Node.js/TS | TS 先转成 JS，V8 解释/JIT 执行 | 每个 isolate 主要由事件循环推进 JS，部分工作交给系统/线程池 | V8 GC + 显式句柄关闭 |
+| Python | CPython 通常解释执行字节码 | OS 线程、进程或 asyncio 事件循环 | 引用计数 + 循环 GC + 显式资源关闭 |
+
+不能仅凭这张表得出“某语言一定更快”。框架、SQL、序列化、网络、算法、对象分配和部署参数都会改变结果。
+
+---
+
+## 2. 同一个 Handler 的代码形式
+
+| 语言 | 常见入口形式 |
+|---|---|
+| C++ | `Response create_order(const Request&)` |
+| Go | `func CreateOrder(w http.ResponseWriter, r *http.Request)` |
+| Java | `ResponseEntity<?> createOrder(@RequestBody Command command)` |
+| TypeScript | `async function createOrder(request, reply): Promise<void>` |
+| Python | `async def create_order(command: Command) -> Response` |
+
+代码形式很像，运行过程却不同。下面只观察“请求由谁执行、等待数据库时发生什么、对象如何回收”。
+
+---
+
+## 3. C++：本地代码，成本和生命周期直接可见
+
+```text
+请求到达
+→ 网络框架把任务交给线程/事件循环
+→ 执行已经编译好的本地机器码
+→ 调数据库客户端
+→ 局部对象离开作用域并析构
+```
+
+常见性能优势：
+
+- 数据布局、分配和复制可以精细控制；
+- 没有通用 GC 暂停；
+- 可以接近系统和硬件能力。
+
+常见性能风险：
+
+- 不必要的复制、堆分配和字符串转换；
+- 锁竞争、伪共享和线程过多；
+- cache miss 和不合理的数据布局；
+- 生命周期错误导致崩溃、泄漏或未定义行为；
+- Debug 构建或错误编译选项造成失真。
+
+常用分析入口：
+
+```text
+CPU：perf、平台 profiler、火焰图
+内存：heap profiler、ASan/LSan
+并发：TSan、锁等待和线程分析
+基准：优化构建下的稳定 benchmark
+```
+
+性能敏感不等于所有对象都改成裸指针。先让所有权正确，再分析真正的热点。
+
+---
+
+## 4. Go：本地代码 + goroutine 调度 + GC
+
+```text
+请求到达
+→ HTTP server 为请求安排 goroutine
+→ Go runtime 把可运行 goroutine 调度到 OS 线程
+→ 数据库等待期间，线程可以执行其他 goroutine
+→ 对象不可达后由 GC 回收
+```
+
+常见性能优势：
+
+- goroutine 和网络并发模型简单；
+- runtime 内建调度、栈增长和 GC；
+- 部署产物和性能工具链统一。
+
+常见性能风险：
+
+- goroutine、channel 或 timer 泄漏；
+- map/slice 扩容和大量短命分配；
+- interface、闭包或指针使用导致不必要逃逸；
+- mutex 竞争、连接池过小或无并发上限；
+- GC 压力和过大的 live heap。
+
+常用分析入口：
+
+```text
+CPU/内存：pprof
+调度与阻塞：go tool trace、block/mutex profile
+分配：benchmark + -benchmem、逃逸诊断
+并发正确性：go test -race
+```
+
+不要看到逃逸到堆就立即改代码。只有 profile 证明分配是瓶颈时才值得优化。
+
+---
+
+## 5. Java：JVM、JIT、GC 和线程模型共同决定表现
+
+```text
+请求到达
+→ 平台线程或虚拟线程执行 Handler
+→ JVM 先执行字节码并收集热点信息
+→ 热点方法由 JIT 编译和优化
+→ 对象由所选 GC 管理
+```
+
+常见性能优势：
+
+- JIT 可以根据运行时热点做优化；
+- 成熟的 GC、线程、诊断和服务框架；
+- 长时间运行的服务通常能获得稳定优化。
+
+常见性能风险：
+
+- 启动和预热阶段与稳定阶段差异明显；
+- 对象分配率过高、live set 过大；
+- GC、锁、线程池和连接池配置不匹配；
+- 装箱、反射、序列化和 ORM 隐藏成本；
+- N+1 查询比 JVM 微优化影响更大。
+
+常用分析入口：
+
+```text
+整体诊断：JFR / JDK Mission Control
+CPU：采样 profiler、热点方法
+内存：分配、堆转储、对象保留链
+GC：暂停、吞吐、分配率、堆占用
+线程：线程转储、锁竞争、池队列
+```
+
+Java benchmark 需要处理预热、JIT 和死代码消除，不能用一次 `System.nanoTime` 循环得出语言结论。
+
+---
+
+## 6. Node.js / TypeScript：事件循环最怕被 CPU 工作阻塞
+
+```text
+请求到达
+→ 事件循环执行 JavaScript Handler
+→ 发起数据库异步操作并让出执行权
+→ 数据就绪后继续执行 Promise 回调
+→ V8 回收不可达对象
+```
+
+常见性能优势：
+
+- IO 密集服务用单一异步模型处理大量连接；
+- JSON、Web 生态和产品迭代效率高；
+- V8 对热点 JavaScript 进行 JIT 优化。
+
+常见性能风险：
+
+- CPU 密集循环阻塞事件循环，所有请求一起延迟；
+- Promise、闭包、对象和 Buffer 大量分配；
+- 未关闭 timer、listener、socket 和 Stream；
+- 无限制并发压垮连接池；
+- heap 看起来正常，但 Buffer/native 内存让 RSS 持续增长。
+
+常用分析入口：
+
+```text
+CPU：Node profiler、Inspector CPU profile
+内存：heap snapshot、allocation profile、RSS/Buffer 指标
+事件循环：event-loop delay、长任务
+异步资源：未关闭 handle、timer、listener、Promise 链
+```
+
+TypeScript 类型在运行时通常不存在，不会自动提升 JavaScript 执行速度。性能取决于编译后的 JavaScript 和运行时行为。
+
+---
+
+## 7. Python：解释器成本、GIL 与 native 依赖
+
+```text
+请求到达
+→ 同步线程或 asyncio Task 执行 Python 代码
+→ 数据库等待时，异步客户端把控制权交回事件循环
+→ CPython 解释执行字节码
+→ 引用计数和循环 GC 管理对象
+```
+
+常见性能优势：
+
+- 开发速度快，标准库和生态丰富；
+- NumPy、数据库驱动等 native 扩展可以执行高性能核心；
+- asyncio 适合大量 IO 等待。
+
+常见性能风险：
+
+- Python 层 CPU 密集循环开销高；
+- 标准 CPython 中，GIL 限制多个线程同时执行 Python 字节码；
+- 在 asyncio 中调用同步 SDK 会阻塞事件循环；
+- 大量临时对象、字典和动态转换增加分配；
+- 进程模型会增加内存和进程间通信成本。
+
+常用分析入口：
+
+```text
+CPU：cProfile、采样 profiler
+内存：tracemalloc、对象数量、进程 RSS
+异步：event-loop delay、慢 callback、未完成 Task
+扩展边界：确认耗时在 Python 代码还是 native 库
+```
+
+CPU 热点应先改算法、批量处理或使用成熟 native 实现，再考虑线程或进程数量。
+
+---
+
+## 8. 一次请求应该看哪些指标
+
+| 指标 | 能回答什么 |
+|---|---|
+| 吞吐量 | 单位时间处理多少请求 |
+| P50/P95/P99 延迟 | 普通请求和尾部慢请求表现 |
+| CPU 使用率 | 是否接近计算上限，热点在哪 |
+| RSS、语言堆、堆外内存 | 内存增长来自哪里 |
+| 分配率和 GC | 是否制造了过多短命对象 |
+| 线程/goroutine/Task 数 | 是否泄漏或无限增长 |
+| 连接池等待 | 慢在业务代码还是等待资源 |
+| 数据库/外部调用耗时 | 端到端延迟的主要组成 |
+| 事件循环延迟 | Node/Python async 是否被阻塞 |
+
+只看平均延迟会隐藏尾部问题；只看语言堆会漏掉 native、Buffer 和进程级内存。
+
+---
+
+## 9. 正确的性能优化流程
+
+```text
+固定请求、数据和环境
+→ 建立延迟、吞吐和资源基线
+→ 用 profile 找最大热点
+→ 一次只改变一个因素
+→ 重新测量
+→ 把结果加入回归测试或容量基线
+```
+
+优化顺序通常是：
+
+1. 修复错误算法和重复工作；
+2. 减少数据库往返、N+1 和外部调用；
+3. 调整并发上限、连接池、批量和缓存；
+4. 降低热点路径分配、复制、锁和序列化；
+5. 最后才处理非常局部的语法级微优化。
+
+---
+
+## 10. 不要这样比较语言
+
+- 用 Debug C++ 对比预热后的 JVM；
+- 用单次请求对比高并发吞吐；
+- 不固定数据库、框架、机器和数据量；
+- 只看平均值，不看 P95/P99；
+- 把网络和数据库耗时算成语言执行速度；
+- 用微基准直接推导完整服务成本；
+- 没有 profile 就凭感觉重写代码。
+
+语言选择还要考虑团队能力、生态、交付速度、可观测性和运维成本，而不仅是单个 benchmark。
+
+---
+
+## 11. 项目中只问这 6 个问题
+
+1. 时间主要花在 CPU、等待 IO、锁还是连接池？
+2. 当前看到的是启动阶段还是稳定阶段？
+3. 内存增长来自语言堆还是堆外/native 资源？
+4. 并发单位是否泄漏或无限增长？
+5. profile 是否证明当前代码是真正热点？
+6. 优化后端到端 P95/P99 是否真的改善？
+
+---
+
+## 语言内详细学习
+
+- [C++：运行时与性能](../cpp/11-运行时与性能.md)
+- [Go：运行时与性能](../go/11-运行时与性能.md)
+- [Java：运行时与性能](../java/11-运行时与性能.md)
+- [Node.js / TypeScript：运行时与性能](../nodejs/11-运行时与性能.md)
+- [Python：运行时与性能](../python/11-运行时与性能.md)

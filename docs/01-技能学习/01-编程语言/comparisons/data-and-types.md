@@ -1,0 +1,290 @@
+# 五门语言的数据与类型：修改订单时到底改了谁
+
+> 目标：看懂赋值、传参和容器复制后，两个变量是在保存两份数据，还是共享同一个对象。
+
+统一使用这个订单：
+
+```text
+order = { id: "1001", amount: 8000, tags: ["new"] }
+```
+
+需要回答四个问题：
+
+1. `copy = order` 会复制什么？
+2. 修改 `copy.amount` 会影响 `order` 吗？
+3. 修改 `copy.tags[0]` 会影响 `order` 吗？
+4. 函数参数收到的是值还是共享对象？
+
+---
+
+## 1. 一张表先看结论
+
+| 语言 | `copy = order` 默认发生什么 | 修改普通字段 | 修改内部集合 |
+|---|---|---|---|
+| C++ | 对象值复制 | 通常不影响原对象 | `vector` 等值成员也复制 |
+| Go | struct 值复制 | 不影响原 struct | slice/map/指针指向的数据可能共享 |
+| Java | 对象引用被复制 | 影响同一个对象 | 影响同一个集合 |
+| Node.js/TS | 对象引用被复制 | 影响同一个对象 | 影响同一个数组 |
+| Python | 两个名字绑定同一个对象 | 影响同一个可变对象 | 影响同一个列表 |
+
+最容易记错的是 Go：struct 本身复制了，但 struct 里的 slice 仍可能共享底层数组。
+
+---
+
+## 2. C++：对象默认按值复制
+
+```cpp
+struct Order {
+    std::string id;
+    std::int64_t amount;
+    std::vector<std::string> tags;
+};
+
+Order order{"1001", 8000, {"new"}};
+Order copy = order;
+
+copy.amount = 9000;
+copy.tags[0] = "vip";
+```
+
+结果：
+
+```text
+order.amount 仍是 8000
+order.tags[0] 仍是 "new"
+```
+
+因为 `std::string` 和 `std::vector` 都具有值语义，复制 `Order` 时会复制它们的内容。
+
+需要共享原对象时必须明确写引用或指针：
+
+```cpp
+Order& same = order;
+same.amount = 9000; // order.amount 也变成 9000
+```
+
+项目中要看清函数签名：
+
+```cpp
+void inspect(Order order);        // 复制
+void inspect(const Order& order); // 只读借用，不复制
+void update(Order& order);        // 可修改借用
+```
+
+如果字段是 `shared_ptr`、裸指针或视图，复制外层对象后仍可能共享内部数据，不能只看到 C++ 就认为一定深复制。
+
+---
+
+## 3. Go：struct 复制，slice 可能共享
+
+```go
+type Order struct {
+    ID     string
+    Amount int64
+    Tags   []string
+}
+
+order := Order{"1001", 8000, []string{"new"}}
+copy := order
+
+copy.Amount = 9000
+copy.Tags[0] = "vip"
+```
+
+结果：
+
+```text
+order.Amount 仍是 8000
+order.Tags[0] 变成 "vip"
+```
+
+原因：
+
+- `copy := order` 复制了整个 struct；
+- `Amount` 是整数，两个 struct 各有一份；
+- `Tags` 是 slice 描述信息，复制后仍可能指向同一个底层数组。
+
+要复制 slice 内容，需要显式复制：
+
+```go
+copy := order
+copy.Tags = slices.Clone(order.Tags)
+copy.Tags[0] = "vip" // 不再影响 order.Tags
+```
+
+函数参数同样按值传递：
+
+```go
+func updateCopy(order Order) {
+    order.Amount = 9000 // 不影响调用方的 Amount
+}
+
+func updateOriginal(order *Order) {
+    order.Amount = 9000 // 修改原 Order
+}
+```
+
+但即使按值传入 `Order`，函数修改其中的 map、slice 元素或指针指向的数据，仍可能影响调用方。
+
+---
+
+## 4. Java：复制的是对象引用
+
+```java
+var order = new Order("1001", 8000, new ArrayList<>(List.of("new")));
+var copy = order;
+
+copy.setAmount(9000);
+copy.getTags().set(0, "vip");
+```
+
+`order` 和 `copy` 指向同一个对象，所以两个修改都会通过 `order` 看到。
+
+```text
+order ──┐
+        ├──> 同一个 Order 对象
+copy  ──┘
+```
+
+Java 的参数仍然是按值传递，只是传递的值经常是对象引用：
+
+```java
+void update(Order order) {
+    order.setAmount(9000); // 修改调用方看到的对象
+}
+
+void replace(Order order) {
+    order = new Order(...); // 只替换局部引用，不改变调用方变量
+}
+```
+
+需要独立对象时，必须使用复制构造、工厂或不可变类型：
+
+```java
+var copy = order.copy();
+```
+
+集合是否也独立，要看 `copy()` 是浅复制还是深复制。
+
+---
+
+## 5. Node.js / TypeScript：对象和数组默认共享引用
+
+```ts
+const order = { id: "1001", amount: 8000, tags: ["new"] };
+const copy = order;
+
+copy.amount = 9000;
+copy.tags[0] = "vip";
+```
+
+`order` 和 `copy` 指向同一个 JavaScript 对象，两个修改都会影响原对象。
+
+对象展开只是浅复制：
+
+```ts
+const copy = { ...order };
+copy.amount = 9000;    // 不影响 order.amount
+copy.tags[0] = "vip";  // 仍然影响 order.tags
+```
+
+要让数组也独立：
+
+```ts
+const copy = {
+  ...order,
+  tags: [...order.tags],
+};
+```
+
+函数参数传递的是引用值的副本：函数可以修改对象内容，但给参数重新赋值不会替换调用方变量。
+
+TypeScript 的 `readonly` 主要是静态检查，不会自动把运行时对象深度冻结。
+
+---
+
+## 6. Python：变量名绑定对象
+
+```python
+order = {"id": "1001", "amount": 8000, "tags": ["new"]}
+copy = order
+
+copy["amount"] = 9000
+copy["tags"][0] = "vip"
+```
+
+两个名字绑定同一个字典，所以修改都会通过 `order` 看到。
+
+浅复制只复制外层：
+
+```python
+copy = order.copy()
+copy["amount"] = 9000     # 不影响 order
+copy["tags"][0] = "vip"   # 仍然影响内部列表
+```
+
+需要同时复制内部可变对象时，可以显式构造或使用 `copy.deepcopy`。业务代码通常更推荐明确构造，避免不清楚哪些对象应该共享。
+
+函数调用采用共享传递语义：
+
+```python
+def update(order: dict) -> None:
+    order["amount"] = 9000  # 修改同一个字典
+
+def replace(order: dict) -> None:
+    order = {}              # 只改变函数内的局部绑定
+```
+
+字符串、整数、tuple 等不可变对象不能原地修改；所谓“修改”通常是创建新对象并重新绑定变量。
+
+---
+
+## 7. 空值与缺失数据怎么表达
+
+订单的 `coupon` 可能不存在：
+
+| 语言 | 常见表达 | 重点 |
+|---|---|---|
+| C++ | `std::optional<Coupon>`、指针 | `optional` 更明确地表达“可能没有值” |
+| Go | `*Coupon`、`value, ok` | 同时区分零值是否具有业务含义 |
+| Java | `null`、边界返回 `Optional<Coupon>` | 不要把 `Optional` 机械用于所有字段 |
+| TypeScript | `Coupon \| undefined`、`Coupon \| null` | 开启严格空值检查并统一语义 |
+| Python | `Coupon \| None` | 运行时仍要处理 `None` |
+
+不要用金额 `0`、空字符串或空对象偷偷代表“没有优惠券”，除非业务明确规定它们等价。
+
+---
+
+## 8. 相等比较也不一样
+
+| 语言 | 订单比较需要注意什么 |
+|---|---|
+| C++ | `operator==` 通常比较值，具体由类型定义 |
+| Go | 可比较 struct 可用 `==`；含 slice/map 的 struct 不能直接比较 |
+| Java | `==` 比较引用；业务值通常用 `equals` |
+| TypeScript | 对象的 `===` 比较是否同一个对象，不比较内容 |
+| Python | `is` 比较身份，`==` 通常调用值相等逻辑 |
+
+订单是有 ID 的实体时，必须明确“相等”是同一个对象、相同 ID，还是所有字段完全相同。
+
+---
+
+## 9. 项目中只问这 5 个问题
+
+1. 赋值后是复制数据，还是共享对象？
+2. 容器复制后，底层元素是否仍然共享？
+3. 函数参数能否修改调用方看到的数据？
+4. 缺失值用什么类型明确表达？
+5. `==` 比较的是身份还是内容？
+
+这五个问题比背“值类型、引用类型”标签更可靠。
+
+---
+
+## 语言内详细学习
+
+- [C++：变量、数据与类型](../cpp/02-变量数据与类型.md)
+- [Go：变量、数据与类型](../go/02-变量数据与类型.md)
+- [Java：变量、数据与类型](../java/02-变量数据与类型.md)
+- [Node.js / TypeScript：变量、数据与类型](../nodejs/02-变量数据与类型.md)
+- [Python：变量、数据与类型](../python/02-变量数据与类型.md)
