@@ -15,6 +15,22 @@
 | AI Web 产品 | Node.js/TypeScript + Python |
 | 推理与高性能基础设施 | C++ + Python |
 
+## 目录怎么读
+
+```text
+01-编程语言/
+├── languages/      # 按语言系统学习
+│   ├── cpp/
+│   ├── go/
+│   ├── java/
+│   ├── nodejs/
+│   └── python/
+├── comparisons/    # 用同一案例横向对比五门语言
+└── examples/       # 可直接运行的最小代码
+```
+
+学一门语言时进入 `languages`；想弄清同一概念在不同语言中如何表达时进入 `comparisons`；想动手验证时进入 `examples`。
+
 ## 横向对比
 
 使用同一个订单案例，对比五门语言的控制流程、数据、函数、抽象、容器、错误、资源、IO、并发、运行时、测试和工程化：[进入五门编程语言横向对比](comparisons/README.md)。
@@ -23,17 +39,17 @@
 
 完整企业仓库的通用治理参见 [企业级后端项目工程结构](../../03-实战项目/企业级项目工程结构.md)。
 
-每门语言使用独立目录，目录名保持 ASCII，入口统一为 `README.md`。每个目录包含十二篇公共分类文档、第 13 篇语言工程化和第 14 篇项目注意事项；首页给出七天路线和综合项目。
+每门语言在 `languages` 下使用独立目录，目录名保持 ASCII，入口统一为 `README.md`。每个目录包含十二篇公共分类文档、第 13 篇语言工程化和第 14 篇项目注意事项；首页给出七天路线和综合项目。
 
 ## 分类学习入口
 
 | 语言 | 核心心智模型 | 分类学习 | 项目专项 |
 | --- | --- | --- | --- |
-| C++ | 所有权、生命周期、RAII、编译链接和成本控制 | [开始学习](cpp/README.md) | [工程化](cpp/13-工程化.md) · [项目注意](cpp/14-项目注意事项.md) |
-| Go | 值复制、slice/interface、error、goroutine 和 GC | [开始学习](go/README.md) | [工程化](go/13-工程化.md) · [项目注意](go/14-项目注意事项.md) |
-| Java | 对象引用、集合泛型、异常、JMM、JVM 和 Spring | [开始学习](java/README.md) | [工程化](java/13-工程化.md) · [项目注意](java/14-项目注意事项.md) |
-| Node.js/TypeScript | 动态运行时、类型擦除、事件循环、Promise 和 Stream | [开始学习](nodejs/README.md) | [工程化](nodejs/13-工程化.md) · [项目注意](nodejs/14-项目注意事项.md) |
-| Python | 动态对象、可变性、异常、上下文管理、asyncio 和运行时 | [开始学习](python/README.md) | [工程化](python/13-工程化.md) · [项目注意](python/14-项目注意事项.md) |
+| C++ | 所有权、生命周期、RAII、编译链接和成本控制 | [开始学习](languages/cpp/README.md) | [工程化](languages/cpp/13-工程化.md) · [项目注意](languages/cpp/14-项目注意事项.md) |
+| Go | 值复制、slice/interface、error、goroutine 和 GC | [开始学习](languages/go/README.md) | [工程化](languages/go/13-工程化.md) · [项目注意](languages/go/14-项目注意事项.md) |
+| Java | 对象引用、集合泛型、异常、JMM、JVM 和 Spring | [开始学习](languages/java/README.md) | [工程化](languages/java/13-工程化.md) · [项目注意](languages/java/14-项目注意事项.md) |
+| Node.js/TypeScript | 动态运行时、类型擦除、事件循环、Promise 和 Stream | [开始学习](languages/nodejs/README.md) | [工程化](languages/nodejs/13-工程化.md) · [项目注意](languages/nodejs/14-项目注意事项.md) |
+| Python | 动态对象、可变性、异常、上下文管理、asyncio 和运行时 | [开始学习](languages/python/README.md) | [工程化](languages/python/13-工程化.md) · [项目注意](languages/python/14-项目注意事项.md) |
 
 五门语言都按相同的十二类组织：
 

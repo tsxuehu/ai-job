@@ -57,8 +57,8 @@
 
 横向对比用于建立共同心智模型。完整语法、标准库和项目实践仍放在各语言目录：
 
-- [C++](../cpp/README.md)
-- [Go](../go/README.md)
-- [Java](../java/README.md)
-- [Node.js / TypeScript](../nodejs/README.md)
-- [Python](../python/README.md)
+- [C++](../languages/cpp/README.md)
+- [Go](../languages/go/README.md)
+- [Java](../languages/java/README.md)
+- [Node.js / TypeScript](../languages/nodejs/README.md)
+- [Python](../languages/python/README.md)

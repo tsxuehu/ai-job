@@ -4,7 +4,7 @@ Node.js/TypeScript 的核心是“JavaScript 动态运行时 + TypeScript 编译
 
 > 示例基线：Node.js 24 LTS、TypeScript 5.9 及以上。项目通过 lockfile、`packageManager` 和 CI 固定实际版本。
 
-> 动手验证：[运行 Node.js/TypeScript 订单示例](../examples/README.md#可运行订单示例)。
+> 动手验证：[运行 Node.js/TypeScript 订单示例](../../examples/README.md#可运行订单示例)。
 
 > 完成语言基础后学习 [13-工程化](13-工程化.md)，进入真实项目时再查阅 [14-项目注意事项](14-项目注意事项.md)。
 
