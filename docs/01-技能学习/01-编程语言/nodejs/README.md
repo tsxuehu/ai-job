@@ -2,6 +2,10 @@
 
 Node.js/TypeScript 的核心是“JavaScript 动态运行时 + TypeScript 编译期约束 + 单线程事件循环上的异步 IO”。快速学习必须区分类型检查与运行时校验，并避免阻塞事件循环、丢失 Promise、忽略背压和资源关闭。
 
+> 示例基线：Node.js 24 LTS、TypeScript 5.9 及以上。项目通过 lockfile、`packageManager` 和 CI 固定实际版本。
+
+> 动手验证：[运行 Node.js/TypeScript 订单示例](../examples/README.md#可运行订单示例)。
+
 > 完成语言基础后学习 [13-工程化](13-工程化.md)，进入真实项目时再查阅 [14-项目注意事项](14-项目注意事项.md)。
 
 ## 快速路线
@@ -19,7 +23,9 @@ Node.js/TypeScript 的核心是“JavaScript 动态运行时 + TypeScript 编译
 | 9 | [IO 与网络](09-IO与网络.md) | 能处理 Buffer、Stream、背压、HTTP 和数据库 IO |
 | 10 | [并发与异步](10-并发与异步.md) | 能解释事件循环、Promise、worker、背压和任务生命周期 |
 | 11 | [运行时与性能](11-运行时与性能.md) | 能分析 V8、event loop、CPU、GC 和 heap 问题 |
-| 12 | [测试与工程实践](12-测试与工程实践.md) | 能测试和治理生产 TypeScript 服务 |
+| 12 | [测试、调试与性能实践](12-测试与工程实践.md) | 能验证异步行为并分析 CPU、内存和事件循环 |
+| 13 | [工程化](13-工程化.md) | 能组织 package、workspace、运行时依赖和交付流程 |
+| 14 | [项目注意事项](14-项目注意事项.md) | 能识别类型擦除、Promise、Stream、模块和资源陷阱 |
 
 ## 七天快速上手
 
