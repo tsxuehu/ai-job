@@ -2,7 +2,7 @@
 
 Node.js/TypeScript 的核心是“JavaScript 动态运行时 + TypeScript 编译期约束 + 单线程事件循环上的异步 IO”。快速学习必须区分类型检查与运行时校验，并避免阻塞事件循环、丢失 Promise、忽略背压和资源关闭。
 
-> 开始真实项目之前，先阅读 [Node.js / TypeScript 项目特性与注意事项](项目注意事项.md)；建立 workspace 时使用 [Node.js / TypeScript 企业级项目结构](企业级项目结构.md)。
+> 完成语言基础后学习 [13-工程化](13-工程化.md)，进入真实项目时再查阅 [14-项目注意事项](14-项目注意事项.md)。
 
 ## 快速路线
 
@@ -16,7 +16,7 @@ Node.js/TypeScript 的核心是“JavaScript 动态运行时 + TypeScript 编译
 | 6 | [容器与迭代](06-容器与迭代.md) | 能使用 Array、Map、Set、Buffer 和异步迭代 |
 | 7 | [错误处理](07-错误处理.md) | 能统一 throw、rejection、Stream、取消和崩溃边界 |
 | 8 | [内存与资源](08-内存与资源.md) | 能理解 V8 内存并治理监听器、连接和任务资源 |
-| 9 | [模块化、依赖与 IO](09-模块化依赖与IO.md) | 能设计运行时模块边界并治理 ESM、依赖和 IO |
+| 9 | [IO 与网络](09-IO与网络.md) | 能处理 Buffer、Stream、背压、HTTP 和数据库 IO |
 | 10 | [并发与异步](10-并发与异步.md) | 能解释事件循环、Promise、worker、背压和任务生命周期 |
 | 11 | [运行时与性能](11-运行时与性能.md) | 能分析 V8、event loop、CPU、GC 和 heap 问题 |
 | 12 | [测试与工程实践](12-测试与工程实践.md) | 能测试和治理生产 TypeScript 服务 |
