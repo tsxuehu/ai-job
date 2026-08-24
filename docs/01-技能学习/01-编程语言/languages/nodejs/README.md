@@ -35,7 +35,7 @@ TypeScript 建模 Order
 → workspace/package exports 形成可交付工程
 ```
 
-## 3. 十四章学习顺序
+## 3. 十五章学习顺序
 
 | 顺序 | 章节 | 读完必须会做 |
 | ---: | --- | --- |
@@ -53,6 +53,7 @@ TypeScript 建模 Order
 | 12 | [测试与工程实践](12-测试与工程实践.md) | 使用 node:test、类型检查、真实边界和 profile |
 | 13 | [工程化](13-工程化.md) | 组织 workspace、package、exports、依赖、CI 和发布 |
 | 14 | [项目注意事项](14-项目注意事项.md) | 审查未等待 Promise、阻塞、取消、模块和安全风险 |
+| 15 | [编译、运行与调试命令](15-编译运行与调试命令.md) | 使用 npm scripts、typecheck、Inspector、profile 和产物验证 |
 
 ## 4. 从其他语言迁移时要修正的直觉
 
@@ -74,7 +75,7 @@ TypeScript 建模 Order
 | 4 | 10：事件循环、Promise、并发限制、worker | 压测阻塞和非阻塞两种实现 |
 | 5 | 11：V8、GC、event-loop delay 和 profile | 用证据解释一次延迟或内存异常 |
 | 6 | 12：node:test、集成测试和性能工具 | 固定质量命令可重复执行 |
-| 7 | 13—14：workspace、exports、构建和生产规则 | 案例可构建、启动、测试和优雅停机 |
+| 7 | 13—15：workspace、命令、构建和生产规则 | 案例可构建、调试、启动、测试和优雅停机 |
 
 ## 6. 每章的学习动作
 

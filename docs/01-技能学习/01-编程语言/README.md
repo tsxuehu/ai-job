@@ -45,17 +45,17 @@
 
 完整企业仓库的通用治理参见 [企业级后端项目工程结构](../../03-实战项目/企业级项目工程结构.md)。
 
-每门语言在 `languages` 下使用独立目录，目录名保持 ASCII，入口统一为 `README.md`。每个目录包含十二篇公共分类文档、第 13 篇语言工程化和第 14 篇项目注意事项。面试内容单独放在 `面试题/<语言>/` 目录。
+每门语言在 `languages` 下使用独立目录，目录名保持 ASCII，入口统一为 `README.md`。每个目录包含十二篇公共分类文档、第 13 篇语言工程化、第 14 篇项目注意事项和第 15 篇编译运行调试命令。面试内容单独放在 `面试题/<语言>/` 目录。
 
 ## 5. 分类学习入口
 
 | 语言 | 核心心智模型 | 分类学习 | 项目专项 |
 | --- | --- | --- | --- |
-| C++ | 所有权、生命周期、RAII、编译链接和成本控制 | [开始学习](languages/cpp/README.md) | [工程化](languages/cpp/13-工程化.md) · [项目注意](languages/cpp/14-项目注意事项.md) · [面试题](面试题/cpp/README.md) |
-| Go | 值复制、slice/interface、error、goroutine 和 GC | [开始学习](languages/go/README.md) | [工程化](languages/go/13-工程化.md) · [项目注意](languages/go/14-项目注意事项.md) · [面试题](面试题/go/README.md) |
-| Java | 对象引用、集合泛型、异常、JMM、JVM 和 Spring | [开始学习](languages/java/README.md) | [工程化](languages/java/13-工程化.md) · [项目注意](languages/java/14-项目注意事项.md) · [面试题](面试题/java/README.md) |
-| Node.js/TypeScript | 动态运行时、类型擦除、事件循环、Promise 和 Stream | [开始学习](languages/nodejs/README.md) | [工程化](languages/nodejs/13-工程化.md) · [项目注意](languages/nodejs/14-项目注意事项.md) · [面试题](面试题/nodejs/README.md) |
-| Python | 动态对象、可变性、异常、上下文管理、asyncio 和运行时 | [开始学习](languages/python/README.md) | [工程化](languages/python/13-工程化.md) · [项目注意](languages/python/14-项目注意事项.md) · [面试题](面试题/python/README.md) |
+| C++ | 所有权、生命周期、RAII、编译链接和成本控制 | [开始学习](languages/cpp/README.md) | [工程化](languages/cpp/13-工程化.md) · [项目注意](languages/cpp/14-项目注意事项.md) · [命令](languages/cpp/15-编译运行与调试命令.md) · [面试题](面试题/cpp/README.md) |
+| Go | 值复制、slice/interface、error、goroutine 和 GC | [开始学习](languages/go/README.md) | [工程化](languages/go/13-工程化.md) · [项目注意](languages/go/14-项目注意事项.md) · [命令](languages/go/15-编译运行与调试命令.md) · [面试题](面试题/go/README.md) |
+| Java | 对象引用、集合泛型、异常、JMM、JVM 和 Spring | [开始学习](languages/java/README.md) | [工程化](languages/java/13-工程化.md) · [项目注意](languages/java/14-项目注意事项.md) · [命令](languages/java/15-编译运行与调试命令.md) · [面试题](面试题/java/README.md) |
+| Node.js/TypeScript | 动态运行时、类型擦除、事件循环、Promise 和 Stream | [开始学习](languages/nodejs/README.md) | [工程化](languages/nodejs/13-工程化.md) · [项目注意](languages/nodejs/14-项目注意事项.md) · [命令](languages/nodejs/15-编译运行与调试命令.md) · [面试题](面试题/nodejs/README.md) |
+| Python | 动态对象、可变性、异常、上下文管理、asyncio 和运行时 | [开始学习](languages/python/README.md) | [工程化](languages/python/13-工程化.md) · [项目注意](languages/python/14-项目注意事项.md) · [命令](languages/python/15-编译运行与调试命令.md) · [面试题](面试题/python/README.md) |
 
 五门语言都按相同的十二类组织：
 
@@ -74,7 +74,7 @@
 | 11 | 运行时与性能 | 代码如何执行，分配、GC、调度和热点成本在哪？ |
 | 12 | 测试、调试与性能实践 | 如何证明正确、定位故障并用数据验证性能？ |
 
-前十二类用于横向建立统一认知；第 13 篇“工程化”说明该语言的模块、仓库、构建、测试、交付与生产运行方式，第 14 篇“项目注意事项”集中语言专有语义和高频陷阱。
+前十二类用于横向建立统一认知；第 13 篇“工程化”说明模块、仓库与交付方式，第 14 篇“项目注意事项”集中语言专有陷阱，第 15 篇把编译、运行、测试、调试、性能和发布命令整理成可执行手册。
 
 ## 6. 术语先说人话
 
