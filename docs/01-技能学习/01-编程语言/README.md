@@ -1,12 +1,12 @@
 # 编程语言
 
-## 学习策略
+## 1. 学习策略
 
 - 主语言：不用 AI 也能独立编码、测试、调试和优化。
 - 辅助语言：能够完成真实服务并参与代码评审。
 - 其他语言：能够阅读代码并理解适用场景。
 
-## 语言选择
+## 2. 语言选择
 
 | 方向 | 推荐组合 |
 | --- | --- |
@@ -15,7 +15,7 @@
 | AI Web 产品 | Node.js/TypeScript + Python |
 | 推理与高性能基础设施 | C++ + Python |
 
-## 目录怎么读
+## 3. 目录怎么读
 
 ```text
 01-编程语言/
@@ -25,13 +25,19 @@
 │   ├── java/
 │   ├── nodejs/
 │   └── python/
+├── 面试题/          # 按语言整理常见面试题和答案
+│   ├── cpp/
+│   ├── go/
+│   ├── java/
+│   ├── nodejs/
+│   └── python/
 ├── comparisons/    # 用同一案例横向对比五门语言
 └── examples/       # 可直接运行的最小代码
 ```
 
-学一门语言时进入 `languages`；想弄清同一概念在不同语言中如何表达时进入 `comparisons`；想动手验证时进入 `examples`。
+学一门语言时进入 `languages`；准备面试时进入 [面试题](面试题/README.md)；想弄清同一概念在不同语言中如何表达时进入 `comparisons`；想动手验证时进入 `examples`。
 
-## 横向对比
+## 4. 横向对比
 
 使用同一个订单案例，对比五门语言的控制流程、数据、函数、抽象、容器、错误、资源、IO、并发、运行时、测试和工程化：[进入五门编程语言横向对比](comparisons/README.md)。
 
@@ -39,17 +45,17 @@
 
 完整企业仓库的通用治理参见 [企业级后端项目工程结构](../../03-实战项目/企业级项目工程结构.md)。
 
-每门语言在 `languages` 下使用独立目录，目录名保持 ASCII，入口统一为 `README.md`。每个目录包含十二篇公共分类文档、第 13 篇语言工程化和第 14 篇项目注意事项；首页给出七天路线和综合项目。
+每门语言在 `languages` 下使用独立目录，目录名保持 ASCII，入口统一为 `README.md`。每个目录包含十二篇公共分类文档、第 13 篇语言工程化和第 14 篇项目注意事项。面试内容单独放在 `面试题/<语言>/` 目录。
 
-## 分类学习入口
+## 5. 分类学习入口
 
 | 语言 | 核心心智模型 | 分类学习 | 项目专项 |
 | --- | --- | --- | --- |
-| C++ | 所有权、生命周期、RAII、编译链接和成本控制 | [开始学习](languages/cpp/README.md) | [工程化](languages/cpp/13-工程化.md) · [项目注意](languages/cpp/14-项目注意事项.md) |
-| Go | 值复制、slice/interface、error、goroutine 和 GC | [开始学习](languages/go/README.md) | [工程化](languages/go/13-工程化.md) · [项目注意](languages/go/14-项目注意事项.md) |
-| Java | 对象引用、集合泛型、异常、JMM、JVM 和 Spring | [开始学习](languages/java/README.md) | [工程化](languages/java/13-工程化.md) · [项目注意](languages/java/14-项目注意事项.md) |
-| Node.js/TypeScript | 动态运行时、类型擦除、事件循环、Promise 和 Stream | [开始学习](languages/nodejs/README.md) | [工程化](languages/nodejs/13-工程化.md) · [项目注意](languages/nodejs/14-项目注意事项.md) |
-| Python | 动态对象、可变性、异常、上下文管理、asyncio 和运行时 | [开始学习](languages/python/README.md) | [工程化](languages/python/13-工程化.md) · [项目注意](languages/python/14-项目注意事项.md) |
+| C++ | 所有权、生命周期、RAII、编译链接和成本控制 | [开始学习](languages/cpp/README.md) | [工程化](languages/cpp/13-工程化.md) · [项目注意](languages/cpp/14-项目注意事项.md) · [面试题](面试题/cpp/README.md) |
+| Go | 值复制、slice/interface、error、goroutine 和 GC | [开始学习](languages/go/README.md) | [工程化](languages/go/13-工程化.md) · [项目注意](languages/go/14-项目注意事项.md) · [面试题](面试题/go/README.md) |
+| Java | 对象引用、集合泛型、异常、JMM、JVM 和 Spring | [开始学习](languages/java/README.md) | [工程化](languages/java/13-工程化.md) · [项目注意](languages/java/14-项目注意事项.md) · [面试题](面试题/java/README.md) |
+| Node.js/TypeScript | 动态运行时、类型擦除、事件循环、Promise 和 Stream | [开始学习](languages/nodejs/README.md) | [工程化](languages/nodejs/13-工程化.md) · [项目注意](languages/nodejs/14-项目注意事项.md) · [面试题](面试题/nodejs/README.md) |
+| Python | 动态对象、可变性、异常、上下文管理、asyncio 和运行时 | [开始学习](languages/python/README.md) | [工程化](languages/python/13-工程化.md) · [项目注意](languages/python/14-项目注意事项.md) · [面试题](面试题/python/README.md) |
 
 五门语言都按相同的十二类组织：
 
@@ -70,7 +76,7 @@
 
 前十二类用于横向建立统一认知；第 13 篇“工程化”说明该语言的模块、仓库、构建、测试、交付与生产运行方式，第 14 篇“项目注意事项”集中语言专有语义和高频陷阱。
 
-## 术语先说人话
+## 6. 术语先说人话
 
 | 术语 | 本文中的意思 |
 |---|---|
@@ -84,6 +90,6 @@
 
 学习新语言时先找与主语言相同的概念，再重点理解语义不同之处。例如“赋值”在 C++ 可能复制或移动，在 Go/Java/Python/JavaScript 中又有不同的值与引用共享规则。
 
-## 掌握标准
+## 7. 掌握标准
 
 主语言需要掌握语法与标准库、运行时、并发、内存、错误处理、资源释放、依赖、测试和性能分析。能实现包含数据库、缓存、超时、取消、日志和测试的服务，并定位 CPU、内存、阻塞与并发问题。

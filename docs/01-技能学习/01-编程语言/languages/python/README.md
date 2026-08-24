@@ -1,55 +1,94 @@
-# Python
+# Python：从对象模型到生产服务
 
-Python 的核心是理解动态对象模型、可变性、异常与上下文管理，以及同步、线程、进程和 asyncio 的边界。类型标注能改善检查和协作，但不会自动校验运行时输入。
+Python 语法短，但动态语义并不简单。这套资料面向有后端经验的开发者，重点建立“名称绑定对象”的模型、数据模型协议、可变性、异常、迭代器、asyncio、解释器和包工程。
 
-> 示例基线：CPython 3.14 普通构建；并发示例最低需要 Python 3.11。使用 free-threaded 构建时必须单独说明线程与扩展兼容性。
+贯穿案例仍是订单服务：dataclass 表达订单，Protocol 抽象支付，异常表达失败，文件/HTTP/数据库形成边界，asyncio 处理并发，pytest/profile 形成证据。
 
-> 动手验证：[运行 Python 订单示例](../../examples/README.md#可运行订单示例)。
+> 本机示例基线为 Python 3.12。先运行[订单示例](../../examples/README.md#可运行订单示例)，新版本特性应由项目版本约束决定。
 
-> 完成语言基础后学习 [13-工程化](13-工程化.md)，进入真实项目时再查阅 [14-项目注意事项](14-项目注意事项.md)。
+> 学完使用 [Python 分类面试题](../../面试题/python/README.md)检查表达。
 
-## 快速路线
+## 1. 最终要建立的心智模型
 
-| 顺序 | 分类 | 掌握结果 |
+- 变量为什么不是盒子，而是名称到对象的绑定？
+- 赋值、浅复制、深复制和函数传参分别产生什么对象图？
+- `is`、`==`、`__eq__`、hash 和可变性如何影响集合？
+- class、dataclass、Protocol、ABC 和泛型分别解决什么问题？
+- iterable、iterator、generator 如何通过协议协作？
+- 异常链、context manager 和 `ExceptionGroup` 如何表达失败与清理？
+- 类型标注为什么不自动验证 HTTP/JSON 等运行时输入？
+- threading、multiprocessing、asyncio 应按什么负载选择？
+- GIL 具体限制什么，又不保证什么？
+- import、虚拟环境、distribution package 和应用目录分别是什么？
+
+## 2. 贯穿案例的增长路线
+
+```text
+名称绑定 Order 对象
+→ dataclass 和方法维护状态
+→ Protocol 隔离 PaymentGateway
+→ list/dict/generator 处理订单流
+→ exception + context manager 保证失败清理
+→ HTTP/JSON/数据库进入运行时边界
+→ asyncio TaskGroup 管理并发任务
+→ pytest/type checker/profile 提供证据
+→ pyproject + src layout 形成可交付工程
+```
+
+## 3. 十四章学习顺序
+
+| 顺序 | 章节 | 读完必须会做 |
 | ---: | --- | --- |
-| 1 | [基础语法](01-基础语法.md) | 能理解缩进、名称绑定、模块入口和动态执行 |
-| 2 | [变量、数据与类型](02-变量数据与类型.md) | 能理解对象、可变性、复制、str/bytes 和类型标注 |
-| 3 | [表达式与逻辑控制](03-表达式与逻辑控制.md) | 能处理真值、短路、循环、推导式和模式匹配 |
-| 4 | [函数与作用域](04-函数与作用域.md) | 能使用参数、LEGB、闭包、装饰器和生成器 |
-| 5 | [自定义类型、面向对象与抽象](05-面向对象与抽象.md) | 能使用 class、继承、组合、Protocol 和鸭子类型实现多态 |
-| 6 | [容器与迭代](06-容器与迭代.md) | 能选择容器并理解 iterable、iterator 和 generator |
-| 7 | [错误处理](07-错误处理.md) | 能设计异常链、错误边界和异步任务失败策略 |
-| 8 | [内存与资源](08-内存与资源.md) | 能理解对象生命周期并管理同步/异步资源 |
-| 9 | [IO 与网络](09-IO与网络.md) | 能处理文本、字节流、文件、HTTP 和数据库 IO |
-| 10 | [并发与异步](10-并发与异步.md) | 能选择线程、进程或 asyncio 并处理取消与背压 |
-| 11 | [运行时与性能](11-运行时与性能.md) | 能理解 CPython、GIL 并用数据定位热点 |
-| 12 | [测试、调试与性能实践](12-测试与工程实践.md) | 能完成类型检查、异步测试、profiling 和内存分析 |
-| 13 | [工程化](13-工程化.md) | 能组织 package、依赖环境、同步/异步入口和交付流程 |
-| 14 | [项目注意事项](14-项目注意事项.md) | 能识别可变对象、类型提示、阻塞调用、GIL 和导入陷阱 |
+| 1 | [基础语法](01-基础语法.md) | 运行模块并理解缩进、import 和入口 |
+| 2 | [变量、数据与类型](02-变量数据与类型.md) | 画出名称、对象、共享、复制和可变性 |
+| 3 | [表达式与逻辑控制](03-表达式与逻辑控制.md) | 正确使用真值、推导式、match 和循环 |
+| 4 | [函数与作用域](04-函数与作用域.md) | 设计参数、闭包、装饰器和 LEGB 作用域 |
+| 5 | [面向对象与抽象](05-面向对象与抽象.md) | 使用数据模型、Protocol、ABC 和泛型建模 |
+| 6 | [容器与迭代](06-容器与迭代.md) | 理解容器复杂度、iterator 和 generator |
+| 7 | [错误处理](07-错误处理.md) | 设计异常层次、链、边界和清理动作 |
+| 8 | [内存与资源](08-内存与资源.md) | 解释引用计数/GC，并用上下文管理资源 |
+| 9 | [IO 与网络](09-IO与网络.md) | 管理编码、流、HTTP、JSON 和数据库边界 |
+| 10 | [并发与异步](10-并发与异步.md) | 选择线程/进程/asyncio 并管理任务生命周期 |
+| 11 | [运行时与性能](11-运行时与性能.md) | 解释解释器、字节码、GIL、分配和热点 |
+| 12 | [测试与工程实践](12-测试与工程实践.md) | 使用 pytest、类型检查、profile 和基准 |
+| 13 | [工程化](13-工程化.md) | 组织 package、pyproject、依赖、入口和发布 |
+| 14 | [项目注意事项](14-项目注意事项.md) | 审查可变默认值、阻塞 async、import 和安全风险 |
 
-## 七天快速上手
+## 4. 从其他语言迁移时要修正的直觉
 
-1. 第 1 天：完成变量、容器、字符串、可变性、类型标注和控制流程。
-2. 第 2 天：训练函数参数、闭包、装饰器、生成器、类和 Protocol。
-3. 第 3 天：处理异常、上下文管理、复制、默认参数和资源关闭。
-4. 第 4 天：建立可复现环境，完成文件、JSON、HTTP 和数据库访问。
-5. 第 5 天：实现 asyncio 服务，并隔离阻塞 IO 与 CPU 计算。
-6. 第 6 天：补齐单元、集成、异步、超时和取消测试。
-7. 第 7 天：使用 CPU、内存和事件循环工具定位一次问题。
+| 旧直觉 | Python 中要改成 |
+| --- | --- |
+| C++/Go 值变量 | Python 名称通常绑定对象，赋值不复制对象 |
+| Java/TypeScript 声明类型 | 标注默认不做运行时强制，边界仍需验证 |
+| Java interface | Protocol 可以按结构匹配；ABC 提供运行时名义关系 |
+| Node async/await | 语法相似，但 asyncio 的任务、取消和库生态不同 |
+| Go goroutine/Java thread | async task 只在事件循环协作；CPU 工作不能因此并行 |
 
-七天目标是能写结构清晰的小型 API 或 AI 工作流，不是熟悉全部数据科学和 Web 生态。
+## 5. 七天高密度路线
 
-## 需要学习
+| 天 | 阅读与编码 | 当天证据 |
+| ---: | --- | --- |
+| 1 | 01—03：对象、绑定、可变性、控制流 | 画对象图并解释浅复制结果 |
+| 2 | 04—06：函数、数据模型、Protocol、迭代器 | 完成订单模型和惰性订单流 |
+| 3 | 07—09：异常、资源、编码、HTTP、数据库 | 错误保留 cause，资源能稳定关闭 |
+| 4 | 10：线程、进程、asyncio、取消 | TaskGroup 任务可失败、取消和等待 |
+| 5 | 11：解释器、GIL、内存和 profile | 用 profile 解释一个热点或保留路径 |
+| 6 | 12：pytest、类型检查、属性测试和 benchmark | 固定质量命令可重复执行 |
+| 7 | 13—14：pyproject、入口、依赖和生产规则 | 案例可安装、测试、启动和部署 |
 
-- 对象模型、可变性、作用域、装饰器、生成器和上下文管理器。
-- 类型标注、异常、包管理、虚拟环境和依赖锁定。
-- GIL、threading、multiprocessing、asyncio 和取消语义。
-- FastAPI/Django 的请求生命周期及同步/异步边界。
-- pytest、类型检查、lint、profiling 和内存分析。
-- 模型 SDK、数据处理、RAG、Agent 和 Evals 生态。
+## 6. 每章的学习动作
 
-## 验收
+先在 REPL/测试中运行；画名称与对象关系；修改可变/不可变输入并预测；用类型检查、测试、tracemalloc/profile 验证；最后把动态便利对应的运行时责任写清楚。
 
-实现结构清晰、类型可检查、测试完整的异步 API 和 AI 工作流；能够发现并隔离 async 链路中的阻塞 IO 或 CPU 密集任务。
+## 7. 综合实战与证据
 
-建议验收项目：实现异步任务 API，包含运行时校验、数据库、模型/外部 API 超时、并发限制、取消、优雅停机、指标和测试，并完成一次事件循环阻塞或内存分析。
+实现有界订单 API + Worker：运行时校验外部数据，Protocol 隔离依赖，HTTP/数据库资源由 context manager 管理，async 任务可取消和等待；提交 pytest、真实边界测试、类型检查、内存/CPU profile 与可复现 `pyproject.toml`。
+
+## 8. 权威资料怎么配合
+
+- [The Python Tutorial](https://docs.python.org/3/tutorial/)：从解释器、控制流、数据结构进入模块、IO、异常和类；
+- [Python Data Model](https://docs.python.org/3/reference/datamodel.html)：理解对象、属性、调用、迭代和特殊方法协议；
+- [Fluent Python, 2nd Edition](https://www.oreilly.com/library/view/fluent-python-2nd/9781492056348/)：按数据结构、函数即对象、类协议、控制流和元编程建立 Pythonic 设计；
+- [Python Packaging User Guide](https://packaging.python.org/)：处理 pyproject、构建、distribution 和发布。
+
+Tutorial 建立路线，Data Model 解释原理，Fluent Python 训练惯用抽象，Packaging Guide 负责交付。

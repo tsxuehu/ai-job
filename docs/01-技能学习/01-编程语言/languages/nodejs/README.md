@@ -1,55 +1,94 @@
-# Node.js / TypeScript
+# Node.js / TypeScript：从语言语义到事件驱动后端
 
-Node.js/TypeScript 的核心是“JavaScript 动态运行时 + TypeScript 编译期约束 + 单线程事件循环上的异步 IO”。快速学习必须区分类型检查与运行时校验，并避免阻塞事件循环、丢失 Promise、忽略背压和资源关闭。
+Node.js 项目同时涉及三层：JavaScript 的运行时语义、TypeScript 的编译期类型系统、Node.js 的事件循环与标准库。学习时必须分清哪一层提供了什么保证。
 
-> 示例基线：Node.js 24 LTS、TypeScript 5.9 及以上。项目通过 lockfile、`packageManager` 和 CI 固定实际版本。
+贯穿案例是订单服务：TypeScript 建模订单和支付合同，Promise 表达异步结果，Stream 处理数据，AbortSignal 传播取消，worker_threads 隔离 CPU 工作，测试和 profile 提供证据。
 
-> 动手验证：[运行 Node.js/TypeScript 订单示例](../../examples/README.md#可运行订单示例)。
+> 本机示例基线为 Node.js 24。生产项目应固定 Node LTS 与 TypeScript 版本。先运行[订单示例](../../examples/README.md#可运行订单示例)。
 
-> 完成语言基础后学习 [13-工程化](13-工程化.md)，进入真实项目时再查阅 [14-项目注意事项](14-项目注意事项.md)。
+> 学完使用 [Node.js 分类面试题](../../面试题/nodejs/README.md)检查表达。
 
-## 快速路线
+## 1. 最终要建立的心智模型
 
-| 顺序 | 分类 | 掌握结果 |
+- 原始值、对象引用、浅复制和闭包分别共享什么？
+- TypeScript 类型为什么在运行时消失，外部 JSON 由谁验证？
+- `type`、`interface`、class、判别联合和泛型各适合什么模型？
+- Promise、microtask、timer 和 IO callback 按什么阶段运行？
+- `await` 在哪里暂停，为什么不会自动取消底层 IO？
+- 单个进程何时可以处理大量 IO，何时会被 CPU/同步调用阻塞？
+- Stream 背压如何阻止内存被高速生产者打满？
+- Buffer、string、编码和二进制协议如何转换？
+- ESM、CommonJS、package exports 和构建产物如何保持一致？
+- V8 heap、native memory、handle、listener 和 Promise 如何形成泄漏？
+
+## 2. 贯穿案例的增长路线
+
+```text
+TypeScript 建模 Order
+→ interface/判别联合表达合同与状态
+→ Promise 连接 PaymentGateway
+→ Map/Array/AsyncIterable 处理订单流
+→ Error + cause 保留失败链
+→ Stream/HTTP/数据库跨越 IO 边界
+→ AbortSignal + 并发限制管理任务
+→ node:test/typecheck/profile 提供证据
+→ workspace/package exports 形成可交付工程
+```
+
+## 3. 十四章学习顺序
+
+| 顺序 | 章节 | 读完必须会做 |
 | ---: | --- | --- |
-| 1 | [基础语法](01-基础语法.md) | 能区分 JS 运行时、TS 类型、模块和基础语法 |
-| 2 | [变量、数据与类型](02-变量数据与类型.md) | 能理解动态值、对象共享、联合类型和运行时校验 |
-| 3 | [表达式与逻辑控制](03-表达式与逻辑控制.md) | 能处理转换、类型收窄、穷举和异步循环 |
-| 4 | [函数与作用域](04-函数与作用域.md) | 能理解闭包、this、async 函数和泛型擦除 |
-| 5 | [自定义类型、面向对象与抽象](05-面向对象与抽象.md) | 能区分原型、class、结构接口、组合和多态 |
-| 6 | [容器与迭代](06-容器与迭代.md) | 能使用 Array、Map、Set、Buffer 和异步迭代 |
-| 7 | [错误处理](07-错误处理.md) | 能统一 throw、rejection、Stream、取消和崩溃边界 |
-| 8 | [内存与资源](08-内存与资源.md) | 能理解 V8 内存并治理监听器、连接和任务资源 |
-| 9 | [IO 与网络](09-IO与网络.md) | 能处理 Buffer、Stream、背压、HTTP 和数据库 IO |
-| 10 | [并发与异步](10-并发与异步.md) | 能解释事件循环、Promise、worker、背压和任务生命周期 |
-| 11 | [运行时与性能](11-运行时与性能.md) | 能分析 V8、event loop、CPU、GC 和 heap 问题 |
-| 12 | [测试、调试与性能实践](12-测试与工程实践.md) | 能验证异步行为并分析 CPU、内存和事件循环 |
-| 13 | [工程化](13-工程化.md) | 能组织 package、workspace、运行时依赖和交付流程 |
-| 14 | [项目注意事项](14-项目注意事项.md) | 能识别类型擦除、Promise、Stream、模块和资源陷阱 |
+| 1 | [基础语法](01-基础语法.md) | 区分 JS、TS、Node、ESM 和进程入口 |
+| 2 | [变量、数据与类型](02-变量数据与类型.md) | 解释值、引用、浅复制、null 和运行时数据 |
+| 3 | [表达式与逻辑控制](03-表达式与逻辑控制.md) | 使用严格相等、收窄、判别联合和循环 |
+| 4 | [函数与作用域](04-函数与作用域.md) | 设计函数类型、闭包、this、泛型和 async 返回值 |
+| 5 | [面向对象与抽象](05-面向对象与抽象.md) | 选择 type/interface/class/组合/泛型 |
+| 6 | [容器与迭代](06-容器与迭代.md) | 使用 Map/Set/Iterable/AsyncIterable 和背压 |
+| 7 | [错误处理](07-错误处理.md) | 管理同步异常、Promise rejection、cause 和边界 |
+| 8 | [内存与资源](08-内存与资源.md) | 分析 V8 heap、handle、listener 和资源关闭 |
+| 9 | [IO 与网络](09-IO与网络.md) | 管理 Buffer、Stream、HTTP、JSON、数据库和超时 |
+| 10 | [并发与异步](10-并发与异步.md) | 解释事件循环，管理并发、取消和 CPU 工作 |
+| 11 | [运行时与性能](11-运行时与性能.md) | 从 V8/libuv/GC/event-loop delay 解释性能 |
+| 12 | [测试与工程实践](12-测试与工程实践.md) | 使用 node:test、类型检查、真实边界和 profile |
+| 13 | [工程化](13-工程化.md) | 组织 workspace、package、exports、依赖、CI 和发布 |
+| 14 | [项目注意事项](14-项目注意事项.md) | 审查未等待 Promise、阻塞、取消、模块和安全风险 |
 
-## 七天快速上手
+## 4. 从其他语言迁移时要修正的直觉
 
-1. 第 1 天：完成 JavaScript 值、对象、作用域、控制流程和 TS 类型收窄。
-2. 第 2 天：训练函数、闭包、`this`、数组、Map、接口、联合类型和泛型。
-3. 第 3 天：处理 Error、Promise rejection、AbortSignal 和资源清理。
-4. 第 4 天：建立 ESM TypeScript 项目，完成文件、Stream、JSON 和 HTTP。
-5. 第 5 天：实现并发限制、超时、背压和 CPU 任务隔离。
-6. 第 6 天：完成 API、数据库、校验、日志和集成测试。
-7. 第 7 天：分析事件循环延迟、CPU profile 和 heap snapshot。
+| 旧直觉 | Node.js / TypeScript 中要改成 |
+| --- | --- |
+| Java/C++ 类型在运行时存在 | 多数 TS 类型被擦除，边界必须运行时校验 |
+| Go goroutine/Java thread | Promise 不是线程；普通 JS 默认在事件循环线程运行 |
+| Python async task | 语法接近但取消协议、Stream 和库行为不同 |
+| Java checked exception/Go error | TS 默认不在函数类型中表达抛出的错误 |
+| 多线程服务按请求占线程 | Node 擅长非阻塞 IO，但 CPU 和同步 API 会阻塞所有请求 |
 
-七天目标是写出边界清晰的服务，不是熟悉所有 npm 框架。
+## 5. 七天高密度路线
 
-## 需要学习
+| 天 | 阅读与编码 | 当天证据 |
+| ---: | --- | --- |
+| 1 | 01—03：JS 值、TS 类型、模块和收窄 | 画对象图并验证类型擦除后的运行结果 |
+| 2 | 04—06：函数、抽象、集合与异步迭代 | 完成订单模型、支付接口和订单流 |
+| 3 | 07—09：错误、资源、Stream、HTTP、数据库 | 超时能取消底层操作，Stream 遵守背压 |
+| 4 | 10：事件循环、Promise、并发限制、worker | 压测阻塞和非阻塞两种实现 |
+| 5 | 11：V8、GC、event-loop delay 和 profile | 用证据解释一次延迟或内存异常 |
+| 6 | 12：node:test、集成测试和性能工具 | 固定质量命令可重复执行 |
+| 7 | 13—14：workspace、exports、构建和生产规则 | 案例可构建、启动、测试和优雅停机 |
 
-- JavaScript：作用域、闭包、原型、`this`、Promise、异常和模块系统。
-- TypeScript：泛型、联合类型、类型收窄、工具类型和类型擦除。
-- Node.js：事件循环、microtask、libuv、Buffer、Stream 和背压。
-- worker threads、child process；CPU 密集任务的隔离。
-- Web 框架、中间件、参数校验、ORM/SQL、测试和性能分析。
-- SSE/WebSocket、超时、取消、断连和优雅停机。
+## 6. 每章的学习动作
 
-## 验收
+先运行 JS/TS 代码，再分别问：TypeScript 编译期检查了什么、运行时剩下什么、事件循环何时执行、资源如何结束。用测试、event-loop delay、heap snapshot 和 CPU profile 验证，不根据 `async` 关键字猜测并发行为。
 
-实现一个包含鉴权、数据库、缓存、测试、日志和流式 AI 输出的 TypeScript 服务；能够排查事件循环阻塞、连接未释放和堆内存持续增长。
+## 7. 综合实战与证据
 
-建议验收项目：实现流式任务 API，包含运行时参数校验、数据库、超时与取消、并发限制、Stream 背压、优雅停机、指标和测试。
+实现有界订单 API + Worker：外部 JSON 运行时校验，支付/存储可替换，Stream 有背压，任务有并发上限和 AbortSignal，CPU 工作不会阻塞主事件循环；提交 node:test、真实 adapter 测试、heap/CPU profile、event-loop delay 数据与可复现锁文件。
+
+## 8. 权威资料怎么配合
+
+- [Node.js Learn](https://nodejs.org/en/learn/getting-started/introduction-to-nodejs)：建立事件循环、异步 IO、诊断和性能路径；
+- [Node.js API](https://nodejs.org/api/)：查询 Stream、Buffer、HTTP、AbortSignal、worker_threads 等运行时契约；
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)：按 narrowing、function、object、generics、module 理解类型系统；
+- [JavaScript Language Reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference)：查证 ECMAScript 值、表达式、对象和 Promise 语义。
+
+TypeScript Handbook 解释编译期，Node 文档解释运行时，JavaScript reference 解释语言本身；三者必须分开使用。
