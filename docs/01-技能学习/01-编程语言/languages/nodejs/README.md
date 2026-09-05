@@ -49,7 +49,7 @@ TypeScript 建模 Order
 | 8 | [内存与资源](08-内存与资源.md) | 分析 V8 heap、handle、listener 和资源关闭 |
 | 9 | [IO 与网络](09-IO与网络.md) | 管理 Buffer、Stream、HTTP、JSON、数据库和超时 |
 | 10 | [并发与异步](10-并发与异步.md) | 解释事件循环，管理并发、取消和 CPU 工作 |
-| 11 | [运行时与性能](11-运行时与性能.md) | 从 V8/libuv/GC/event-loop delay 解释性能 |
+| 11 | [运行时与性能](11-运行时与性能.md) | 解释运行时对象、Reflect/Proxy、V8、GC 和事件循环 |
 | 12 | [测试与工程实践](12-测试与工程实践.md) | 使用 node:test、类型检查、真实边界和 profile |
 | 13 | [工程化](13-工程化.md) | 组织 workspace、package、exports、依赖、CI 和发布 |
 | 14 | [项目注意事项](14-项目注意事项.md) | 审查未等待 Promise、阻塞、取消、模块和安全风险 |
